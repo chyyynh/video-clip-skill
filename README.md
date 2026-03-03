@@ -2,26 +2,25 @@
 
 Claude Code skills for YouTube video clipping, transcription, and bilingual subtitle generation.
 
-## Plugins
+## Skills
 
 | Plugin | Skill | What it does | Requirements |
 |--------|-------|-------------|--------------|
 | `clip-api` | `/clip` | Clip via hosted API, returns download URL | `CLIP_API_KEY` |
-| `clip-local` | `/clip-local` | Clip locally with subtitle pipeline | `yt-dlp` + `ffmpeg` + `python3` |
+| `clip-local` | `/clip-local` | Clip locally with full subtitle pipeline | `yt-dlp` + `ffmpeg` + `python3` |
 
 ## Install
 
 ```
-/plugin install github:chyyynh/video-clip-skill
+/plugin marketplace add github:chyyynh/video-clip-skill
+/plugin install clip-local
 ```
 
-Restart Claude Code after installing. Both `/clip` and `/clip-local` will be available.
+Restart Claude Code after installing.
 
 ## Setup
 
 ### clip-api
-
-Get an API key from your account settings, then:
 
 ```bash
 export CLIP_API_KEY="nsc_your_key_here"
@@ -36,25 +35,47 @@ brew install yt-dlp ffmpeg
 # Linux
 pip install yt-dlp && sudo apt install ffmpeg
 
-# Optional — for Whisper transcription (when YouTube has no auto-subs)
+# Optional — Whisper transcription when YouTube has no auto-subs
 export GROQ_API_KEY="gsk_..."
 ```
 
 ## Usage
 
+### Clip with time range
+
+```
+/clip-local clip dQw4w9WgXcQ from 0:10 to 0:30
+/clip-local clip dQw4w9WgXcQ 1:00 2:00 with bilingual zh-TW subtitles
+```
+
+### Auto-highlight (no time range)
+
+```
+/clip-local find the best moments in https://youtube.com/watch?v=xxx
+/clip-local extract highlights from dQw4w9WgXcQ with Chinese subtitles
+```
+
+Claude reads the full transcript, picks 3–5 highlights, and lets you choose which to clip.
+
+### Transcript only
+
+```
+/clip-local get the transcript of dQw4w9WgXcQ
+```
+
+### Via API
+
 ```
 /clip dQw4w9WgXcQ 0:10 0:30
-/clip clip this video with Chinese subtitles https://youtube.com/watch?v=xxx
-
-/clip-local dQw4w9WgXcQ 0:00 1:00
-/clip-local 幫我剪這段影片 0:30 到 2:00 加上中英雙語字幕 https://youtube.com/watch?v=xxx
+/clip get transcript of dQw4w9WgXcQ
 ```
 
-### What each skill can do
+## Features
 
-- **Clip** — trim a video to a specific time range
-- **Transcribe** — get the transcript / subtitles
-- **Translate** — bilingual subtitles (Claude translates, not YouTube auto-translate)
+- **Clip** — trim video to a specific time range
+- **Auto-highlight** — AI picks the best moments, you choose which to clip
+- **Transcribe** — YouTube auto-subs or Groq Whisper fallback
+- **Translate** — bilingual subtitles translated by Claude (not YouTube auto-translate)
 - **Karaoke subtitles** — CapCut-style word-by-word highlight, burned into video
 
 ## License

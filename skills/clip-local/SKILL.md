@@ -1,6 +1,6 @@
 ---
 name: clip-local
-description: Clips a YouTube video locally using yt-dlp and ffmpeg. Supports transcription, translation, and CapCut-style karaoke subtitle burning. Triggers when the user wants local video clipping without an API key.
+description: Clips a YouTube video locally using yt-dlp and ffmpeg. Supports auto-highlight detection, transcription, translation, and CapCut-style karaoke subtitle burning. Triggers when the user wants local video clipping, highlight extraction, or subtitle generation without an API key.
 argument-hint: "[youtube-url-or-id] [start] [end] [output]"
 ---
 
@@ -15,6 +15,17 @@ The ASS karaoke generator is bundled with this plugin. Find it once at the start
 ```bash
 ASS_SCRIPT=$(find ~/.claude/plugins -path '*/clip-local/*/scripts/ass-karaoke.py' 2>/dev/null | head -1)
 ```
+
+## Auto-highlight mode
+
+When the user does NOT specify start/end times (e.g., "幫我剪這個影片的精華" or "clip the best parts"):
+
+1. Download the full transcript (step 1–2 below)
+2. Read the entire transcript and identify 3–5 highlight segments. For each, note:
+   - Start and end timestamps
+   - A short description of why it's interesting (key insight, funny moment, dramatic turn, etc.)
+3. Present the highlights to the user as numbered options and ask which ones to clip
+4. Clip only the segments the user picks, then continue with the normal pipeline (translate, subtitle, etc.)
 
 ## Pipeline
 
