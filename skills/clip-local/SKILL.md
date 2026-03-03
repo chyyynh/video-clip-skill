@@ -1,6 +1,6 @@
 ---
 name: clip-local
-description: Clips a YouTube video locally using yt-dlp and ffmpeg. Supports auto-highlight detection, transcription, translation, and CapCut-style karaoke subtitle burning. Triggers when the user wants local video clipping, highlight extraction, or subtitle generation without an API key.
+description: Clips a YouTube video locally using yt-dlp and ffmpeg. Supports auto-highlight detection, translation, and CapCut-style karaoke subtitle burning. Triggers when the user wants local video clipping, highlight extraction, or subtitle generation. Optional GROQ_API_KEY env var enables Whisper transcription fallback when YouTube has no subtitles.
 argument-hint: "[youtube-url-or-id] [start] [end] [output]"
 ---
 
@@ -10,7 +10,7 @@ Requires `yt-dlp`, `ffmpeg`, and `python3`. Check with `command -v`.
 
 ## Finding plugin scripts
 
-The ASS karaoke generator is bundled with this plugin. Find it once at the start:
+The ASS karaoke generator is bundled with this plugin. Locate it once at the start (this only searches for the plugin's own bundled file):
 
 ```bash
 ASS_SCRIPT=$(find ~/.claude/plugins -path '*/clip-local/*/scripts/ass-karaoke.py' 2>/dev/null | head -1)
@@ -51,7 +51,9 @@ Replace `<LANG>` with the base language code from step 1 (e.g., `en`, `ja`). The
 
 ### 3. Trim VTT to clip range
 
-When clipping a portion (e.g., 10–130s), filter the VTT to only include cues whose timestamps fall within the range. **Keep the original timestamps — do NOT adjust them.** The `--offset` flag in `ass-karaoke.py` handles the time shift.
+When clipping a portion (e.g., 10–130s), filter the VTT to only include cues whose timestamps fall within the range. **Keep the original absolute timestamps — do NOT adjust them.** The `--offset` flag in `ass-karaoke.py` handles the time shift.
+
+When filtering, strip any extra metadata from timestamp lines (e.g., `align:start position:0%`) — keep only `HH:MM:SS.mmm --> HH:MM:SS.mmm`. The ASS parser regex expects clean timestamp lines.
 
 ### 4. Translate subtitles
 
@@ -119,15 +121,17 @@ Then clip with ffmpeg:
 
 ### Whisper fallback (no YouTube subs)
 
-If yt-dlp finds no auto-subs and user has `GROQ_API_KEY`:
+If yt-dlp finds no auto-subs and user has `GROQ_API_KEY` set:
 
 1. Download audio: `yt-dlp -f ba -x --audio-format mp3 --postprocessor-args 'ffmpeg:-ac 1 -ar 16000 -b:a 64k'`
 2. Transcribe: `POST https://api.groq.com/openai/v1/audio/transcriptions` with `model=whisper-large-v3`, `response_format=verbose_json`
 3. Convert segments to VTT
 
+If `GROQ_API_KEY` is not set, inform the user that no subtitles are available and ask how to proceed (clip without subs, or set the key).
+
 ## Common issues
 
-- YouTube throttling: add `--cookies-from-browser chrome`
+- YouTube throttling: export cookies to a file and use `--cookies cookies.txt`
 - Missing CJK fonts for ASS: `brew install font-noto-sans-cjk-tc` (macOS)
 - Groq 25MB audio limit: split audio for videos >50min
 - Stream URLs expire ~6h: re-resolve if clip fails
