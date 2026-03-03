@@ -1,137 +1,67 @@
 ---
 name: clip-local
-description: Clip a YouTube video locally using yt-dlp and ffmpeg. Supports transcription (YouTube subs or Groq Whisper), translation (OpenRouter), and CapCut-style karaoke subtitle burning. Use when the user wants to clip a video, fetch a transcript, or generate subtitles locally.
+description: Clip a YouTube video locally using yt-dlp and ffmpeg. Supports transcription, translation, and CapCut-style karaoke subtitle burning. Use when the user wants local video clipping without an API key.
 argument-hint: "[youtube-url-or-id] [start] [end] [output]"
 ---
 
 # Video Clip (Local)
 
-Full-featured YouTube video clipping pipeline using local tools.
+Requires `yt-dlp`, `ffmpeg`, and `python3`. Check with `command -v`.
 
-## Decision Tree
+## Pipeline
+
+Depending on what the user asks for, run the relevant stages:
+
+### 1. Clip video
+
+Use `yt-dlp --get-url` to resolve direct stream URLs (no download), then `ffmpeg` to clip.
+
+- Without subtitles: use `-c copy` (stream copy, instant).
+- With subtitles: re-encode with `-vf "ass=subs.ass" -c:v libx264 -preset fast -crf 23`.
+- Use input seeking (`-ss` before `-i`) so only the needed segment is downloaded.
+- If separate video+audio streams, use two inputs with `-map 0:v:0 -map 1:a:0`.
+- yt-dlp args: `--no-playlist --no-warnings --force-ipv4 --extractor-args 'youtube:player-client=default,mweb'`
+
+### 2. Get transcript
+
+Try YouTube auto-subs first via `yt-dlp --write-auto-sub --sub-format vtt --skip-download`.
+
+If no subs available and user has `GROQ_API_KEY`:
+- Download audio: `yt-dlp -f ba -x --audio-format mp3 --postprocessor-args 'ffmpeg:-ac 1 -ar 16000 -b:a 64k'`
+- Send to Groq Whisper API: `POST https://api.groq.com/openai/v1/audio/transcriptions` with `model=whisper-large-v3`, `response_format=verbose_json`
+- Convert response segments to VTT format
+
+### 3. Translate subtitles
+
+Read the VTT file, translate the subtitle text yourself, and write a new VTT file with the translations. You are a language model — do this directly without calling any external API.
+
+- Keep the exact same timestamps
+- For bilingual mode: write both original and translated text under each timestamp
+- Keep translations concise and natural for subtitles
+- Do not translate proper nouns unless they have well-known translations
+
+### 4. Generate karaoke subtitles (ASS)
+
+Use the template at `$PLUGIN_DIR/scripts/ass-karaoke.py`:
 
 ```
-User request
-├─ "clip/cut/trim this video"
-│   ├─ With subtitles? → Full pipeline (transcript → translate → ASS → clip --subs)
-│   └─ Without subtitles? → clip.sh only (fast, stream copy)
-├─ "get transcript/subtitles"
-│   └─ transcript.sh (YouTube auto-subs, falls back to Whisper)
-├─ "translate subtitles"
-│   └─ translate.sh (OpenRouter Gemini 2.5 Flash)
-└─ "burn subtitles into video"
-    └─ generate-ass.py → clip.sh --subs
+python3 "$PLUGIN_DIR/scripts/ass-karaoke.py" subs.vtt -o subs.ass [-t translated.vtt] [--offset START_SECONDS]
 ```
 
-## Prerequisites
+This generates CapCut-style ASS subtitles with:
+- Per-word karaoke highlight (grey → white)
+- CJK text split by character for per-char timing
+- Bilingual layout if translation VTT provided
+- YouTube rolling caption deduplication built-in
+- `--offset` adjusts timestamps relative to clip start
 
-Check that required tools are installed:
-```bash
-yt-dlp --version && ffmpeg -version | head -1 && python3 --version
-```
+### 5. Burn subtitles into clip
 
-If missing:
-- macOS: `brew install yt-dlp ffmpeg python3`
-- Linux: `pip install yt-dlp && sudo apt install ffmpeg python3`
+Pass the ASS file to ffmpeg: `-vf "ass=subs.ass"` with re-encoding.
 
-Optional env vars for advanced features:
-- `GROQ_API_KEY` — Whisper transcription (when YouTube has no auto-subs)
-- `OPENROUTER_API_KEY` — subtitle translation
+## Common Issues
 
-## Scripts Reference
-
-All scripts are in `$PLUGIN_DIR/scripts/`. Run them with `bash` or `python3`.
-
-### clip.sh — Clip video
-
-```bash
-bash "$PLUGIN_DIR/scripts/clip.sh" <url-or-id> <start> <end> [output.mp4] [--subs subs.ass]
-```
-
-How it works:
-1. Resolves direct stream URLs via `yt-dlp --get-url` (~2-3s, no download)
-2. Clips via `ffmpeg` with input seeking (`-ss` before `-i`) — only downloads the needed segment
-3. Without `--subs`: stream copy (very fast, no re-encoding)
-4. With `--subs`: re-encodes with `libx264 -preset fast -crf 23` + ASS subtitle filter
-
-### transcript.sh — Fetch transcript
-
-```bash
-bash "$PLUGIN_DIR/scripts/transcript.sh" <url-or-id> [--lang en] [--whisper] [-o output.vtt]
-```
-
-Two-stage fallback:
-1. **YouTube auto-subs** — free, instant, uses `yt-dlp --write-auto-sub`
-2. **Groq Whisper** — requires `GROQ_API_KEY`, downloads audio then transcribes via `whisper-large-v3`
-
-Output: WebVTT file with timestamps.
-
-### translate.sh — Translate subtitles
-
-```bash
-bash "$PLUGIN_DIR/scripts/translate.sh" <input.vtt> <target-lang> [-o output.vtt] [--bilingual]
-```
-
-- Uses OpenRouter (Gemini 2.5 Flash) for fast, natural translation
-- `--bilingual` preserves original text alongside translation
-- Supported languages: `zh-TW`, `zh-CN`, `ja`, `ko`, `en`, `es`, `fr`, `de`
-- Requires `OPENROUTER_API_KEY`
-
-### generate-ass.py — Generate karaoke subtitles
-
-```bash
-python3 "$PLUGIN_DIR/scripts/generate-ass.py" <input.vtt> [-o subs.ass] [-t translated.vtt] [--offset N]
-```
-
-CapCut-inspired ASS subtitle generation:
-- Bold Noto Sans TC, thick black outline + shadow (no background box)
-- Per-word karaoke highlight: grey → white, timed by character/word length
-- CJK-aware: splits Chinese/Japanese into per-character units
-- Bilingual display: original karaoke on top, translation on bottom
-- `--offset` adjusts timestamps to match clip start time
-- Handles YouTube rolling caption deduplication automatically
-
-## Full Pipeline Example
-
-Clip + transcribe + translate + burn bilingual karaoke subtitles:
-
-```bash
-VIDEO="dQw4w9WgXcQ"
-START=10
-END=60
-
-# 1. Get transcript
-bash "$PLUGIN_DIR/scripts/transcript.sh" "$VIDEO" -o subs.vtt
-
-# 2. Translate to Traditional Chinese (bilingual)
-bash "$PLUGIN_DIR/scripts/translate.sh" subs.vtt zh-TW -o subs.zh-TW.vtt --bilingual
-
-# 3. Generate ASS with karaoke (offset = clip start time)
-python3 "$PLUGIN_DIR/scripts/generate-ass.py" subs.vtt -o subs.ass -t subs.zh-TW.vtt --offset "$START"
-
-# 4. Clip with subtitles burned in
-bash "$PLUGIN_DIR/scripts/clip.sh" "$VIDEO" "$START" "$END" output.mp4 --subs subs.ass
-```
-
-## Time Parsing
-
-Accept flexible time formats and convert to seconds:
-- `1:30` → 90
-- `0:10-0:30` → start=10, end=30
-- `10s to 30s` → start=10, end=30
-- `from 1 minute to 2 minutes` → start=60, end=120
-- `1h2m30s` → 3750
-
-## Common Pitfalls
-
-- **yt-dlp rate limiting**: YouTube may throttle. Add `--cookies-from-browser chrome` if downloads are slow or fail.
-- **Missing fonts for ASS**: Karaoke subtitles use Noto Sans TC. If not installed, ffmpeg uses a fallback font. Install with `brew install font-noto-sans-cjk-tc` (macOS) or `sudo apt install fonts-noto-cjk` (Linux).
-- **Large audio files for Whisper**: Groq has a 25MB limit. The transcript.sh script handles this, but very long videos (>50 min) may need manual splitting.
-- **Stream URL expiry**: yt-dlp resolved URLs expire after ~6 hours. If a clip fails, re-run to get fresh URLs.
-
-## Best Practices
-
-- For quick clips without subtitles, ffmpeg uses stream copy — instant, no quality loss.
-- Subtitle burning requires re-encoding (~1-3 min for a 60s clip on modern hardware).
-- Use `--force-keyframes-at-cuts` in yt-dlp for frame-accurate cuts (slower but precise).
-- After clipping: `open output.mp4` (macOS) or `xdg-open output.mp4` (Linux).
+- YouTube throttling: add `--cookies-from-browser chrome` to yt-dlp
+- Missing CJK fonts for ASS: install `fonts-noto-cjk` (Linux) or `font-noto-sans-cjk-tc` (macOS Homebrew)
+- Groq 25MB audio limit: for videos >50min, split audio into chunks first
+- Stream URLs expire after ~6h: re-resolve if clip fails

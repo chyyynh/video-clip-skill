@@ -1,12 +1,8 @@
 {
   "name": "video-clip-skill",
-  "description": "YouTube video clipping, transcription, and subtitle generation. Supports both hosted API and local yt-dlp + ffmpeg backends with CapCut-style karaoke subtitle burning.",
+  "description": "YouTube video clipping, transcription, and subtitle generation with CapCut-style karaoke burning.",
   "version": "0.1.0",
   "author": {
     "name": "chyyynh"
-  },
-  "skills": [
-    "skills/clip",
-    "skills/clip-local"
-  ]
+  }
 }

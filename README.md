@@ -7,14 +7,9 @@ Claude Code plugin for YouTube video clipping, transcription, and subtitle gener
 | Skill | Description | Requirements |
 |-------|-------------|--------------|
 | `/clip` | Clip via hosted API, returns download URL | `CLIP_API_KEY` |
-| `/clip-local` | Clip locally with full subtitle pipeline | `yt-dlp` + `ffmpeg` |
+| `/clip-local` | Clip locally with full subtitle pipeline | `yt-dlp` + `ffmpeg` + `python3` |
 
-Both skills support:
-- Video clipping with precise timestamps
-- Transcript fetching (YouTube auto-subs or Whisper)
-- Subtitle translation (10+ languages)
-- CapCut-style karaoke subtitle burning (word-by-word highlight)
-- Bilingual subtitle display
+Both skills support clipping, transcription, translation, and CapCut-style karaoke subtitle burning.
 
 ## Install
 
@@ -24,9 +19,7 @@ Both skills support:
 
 ## Setup
 
-### API mode (`/clip`) — recommended
-
-Get an API key, then:
+### API mode (`/clip`)
 
 ```bash
 export CLIP_API_KEY="nsc_your_key_here"
@@ -35,37 +28,20 @@ export CLIP_API_KEY="nsc_your_key_here"
 ### Local mode (`/clip-local`)
 
 ```bash
-# Required
 brew install yt-dlp ffmpeg   # macOS
-# or: pip install yt-dlp && sudo apt install ffmpeg
 
-# Optional — for Whisper transcription
-export GROQ_API_KEY="gsk_..."
-
-# Optional — for subtitle translation
-export OPENROUTER_API_KEY="sk-or-..."
+# Optional
+export GROQ_API_KEY="gsk_..."           # Whisper transcription
+export OPENROUTER_API_KEY="sk-or-..."   # Subtitle translation
 ```
 
-## Usage Examples
+## Usage
 
 ```
 /clip dQw4w9WgXcQ 0:10 0:30
-/clip https://youtube.com/watch?v=dQw4w9WgXcQ from 1:00 to 2:00 with Chinese subtitles
-/clip-local dQw4w9WgXcQ 0:30 1:30 output.mp4
-/clip-local get the transcript of dQw4w9WgXcQ
-/clip-local clip dQw4w9WgXcQ 0:00 to 1:00 with bilingual zh-TW subtitles burned in
+/clip get transcript of dQw4w9WgXcQ
+/clip-local clip dQw4w9WgXcQ 1:00 2:00 with bilingual zh-TW subtitles
 ```
-
-## Scripts
-
-The `scripts/` directory contains standalone tools usable outside Claude Code:
-
-| Script | Purpose |
-|--------|---------|
-| `clip.sh` | Clip video via yt-dlp + ffmpeg |
-| `transcript.sh` | Fetch YouTube subs or Groq Whisper transcription |
-| `translate.sh` | Translate VTT subtitles via OpenRouter |
-| `generate-ass.py` | Generate ASS with karaoke highlighting |
 
 ## License
 
