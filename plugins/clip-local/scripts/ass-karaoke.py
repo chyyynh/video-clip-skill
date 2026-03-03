@@ -121,12 +121,6 @@ def deduplicate_rolling(segments):
     # type: (List[dict]) -> List[dict]
     """
     Deduplicate YouTube auto-generated rolling captions.
-
-    Auto-gen VTT uses a 2-line rolling display where consecutive cues overlap:
-      Cue 1: "line A"
-      Cue 2: "line A line B"   (A stays, B appears)
-      Cue 3: "line B"          (A scrolls off)
-
     Step 1: Remove cues whose text is a prefix of the next cue.
     Step 2: Trim suffix-prefix overlap between consecutive cues.
     """

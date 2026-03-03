@@ -1,8 +1,0 @@
-{
-  "name": "video-clip-skill",
-  "description": "YouTube video clipping, transcription, and subtitle generation with CapCut-style karaoke burning.",
-  "version": "0.1.0",
-  "author": {
-    "name": "chyyynh"
-  }
-}

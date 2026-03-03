@@ -1,0 +1,20 @@
+{
+  "name": "video-clip-skill",
+  "owner": {
+    "name": "chyyynh"
+  },
+  "version": "1.0.0",
+  "description": "YouTube video clipping, transcription, and subtitle generation.",
+  "plugins": [
+    {
+      "name": "clip-api",
+      "source": "./plugins/clip-api",
+      "description": "Clip YouTube videos via hosted API. Requires an API key."
+    },
+    {
+      "name": "clip-local",
+      "source": "./plugins/clip-local",
+      "description": "Clip YouTube videos locally with yt-dlp + ffmpeg. No API key needed."
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+{
+  "name": "clip-api",
+  "description": "Clip YouTube videos, fetch transcripts, and generate subtitles via hosted API.",
+  "version": "0.1.0"
+}
