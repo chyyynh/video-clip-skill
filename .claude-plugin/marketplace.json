@@ -3,18 +3,28 @@
   "owner": {
     "name": "chyyynh"
   },
-  "version": "1.0.0",
-  "description": "YouTube video clipping, transcription, and subtitle generation.",
+  "metadata": {
+    "description": "YouTube video clipping, transcription, and bilingual subtitle generation",
+    "version": "0.1.0"
+  },
   "plugins": [
     {
       "name": "clip-api",
-      "source": "./plugins/clip-api",
-      "description": "Clip YouTube videos via hosted API. Requires an API key."
+      "description": "Clip YouTube videos via hosted API with transcription and subtitle options",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/clip"
+      ]
     },
     {
       "name": "clip-local",
-      "source": "./plugins/clip-local",
-      "description": "Clip YouTube videos locally with yt-dlp + ffmpeg. No API key needed."
+      "description": "Clip YouTube videos locally with yt-dlp, ffmpeg, and CapCut-style karaoke subtitles",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/clip-local"
+      ]
     }
   ]
 }

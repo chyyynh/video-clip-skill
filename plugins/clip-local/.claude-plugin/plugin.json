@@ -1,5 +1,0 @@
-{
-  "name": "clip-local",
-  "description": "Clip YouTube videos locally with yt-dlp, ffmpeg, and CapCut-style karaoke subtitles.",
-  "version": "0.1.0"
-}

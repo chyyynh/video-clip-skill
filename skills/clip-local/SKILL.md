@@ -18,19 +18,25 @@ ASS_SCRIPT=$(find ~/.claude/plugins -path '*/clip-local/*/scripts/ass-karaoke.py
 
 ## Pipeline
 
-### 1. Get video info and subtitles
-
-Get title/duration and download **original language** auto-subs in one step:
+### 1. Get video info and available subtitles
 
 ```bash
-yt-dlp --print title --print duration_string \
-  --write-auto-sub --sub-lang "en.*" --sub-format vtt --skip-download \
+yt-dlp --print title --print duration_string --list-subs \
+  --no-playlist --no-warnings --force-ipv4 "<URL>" 2>&1
+```
+
+This shows the title, duration, and all available subtitle tracks. Look at the output to determine the **original language** — it's the language listed under "Available automatic captions" that is NOT marked as "translated". YouTube metadata `language` field is often wrong, so always check the actual subtitle list.
+
+### 2. Download original language subtitles
+
+```bash
+yt-dlp --write-auto-sub --sub-lang "<ORIGINAL_LANG>" --sub-format vtt --skip-download \
   --no-playlist --no-warnings --force-ipv4 \
   --extractor-args 'youtube:player-client=default,mweb' \
   -o "subs" "<URL>"
 ```
 
-Only download the **original language** subs (usually English). Do NOT use YouTube's auto-translated subs for other languages — they are low quality.
+Only download subs in the **original language** you identified from step 1. Do NOT use YouTube's auto-translated subs — they are low quality. All translation is done by you.
 
 ### 2. Trim VTT to clip range
 
